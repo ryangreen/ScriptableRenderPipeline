@@ -189,20 +189,30 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         {
             EditorGUI.BeginChangeCheck();
 
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.FlexibleSpace();
-                DoInspectorToolbar(k_EditModes, editLabels, GetBoundsGetter, this);
-                GUILayout.FlexibleSpace();
-            }
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            DoInspectorToolbar(k_EditModes, editLabels, GetBoundsGetter, this);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.PropertyField(m_Size, kSizeContent);
             EditorGUILayout.PropertyField(m_MaterialProperty, kMaterialContent);
             EditorGUILayout.PropertyField(m_DrawDistanceProperty, kDistanceContent);
-            EditorGUILayout.Slider(m_FadeScaleProperty, 0.0f, 1.0f, kFadeScaleContent);
+
+            EditorGUI.BeginChangeCheck();
+            float fadeDistancePercent = m_FadeScaleProperty.floatValue * 100f;
+            fadeDistancePercent = EditorGUILayout.Slider(kFadeScaleContent, fadeDistancePercent, 0f, 100f);
+            if (EditorGUI.EndChangeCheck())
+                m_FadeScaleProperty.floatValue = fadeDistancePercent * 0.01f;
+
             EditorGUILayout.PropertyField(m_UVScaleProperty, kUVScaleContent);
             EditorGUILayout.PropertyField(m_UVBiasProperty, kUVBiasContent);
-            EditorGUILayout.Slider(m_FadeFactor, 0.0f, 1.0f, kFadeFactorContent);
+
+            EditorGUI.BeginChangeCheck();
+            float fadePercent = m_FadeFactor.floatValue * 100f;
+            fadePercent = EditorGUILayout.Slider(kFadeFactorContent, fadePercent, 0f, 100f);
+            if (EditorGUI.EndChangeCheck())
+                m_FadeFactor.floatValue = fadePercent * 0.01f;
 
             // only display the affects transparent property if material is HDRP/decal
             if (DecalSystem.IsHDRenderPipelineDecal(m_DecalProjectorComponent.Mat.shader.name))
