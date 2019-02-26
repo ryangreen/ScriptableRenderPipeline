@@ -266,24 +266,14 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         }
 
         [Shortcut("HDRP/Decal: Move Size Preserving UV", typeof(SceneView), KeyCode.Keypad1, ShortcutModifiers.Action)]
-        static void EnterEditModePreservingUV(ShortcutArguments args)
-        {
-            var bounds = (owner as DecalProjectorComponentEditor).GetBoundsGetter();
-            ChangeEditMode(currentEditMode = kEditShapePreservingUV, bounds, owner);
-        }
+        static void EnterEditModePreservingUV(ShortcutArguments args) =>
+            ChangeEditMode(kEditShapePreservingUV, (owner as DecalProjectorComponentEditor).GetBoundsGetter(), owner);
 
         [Shortcut("HDRP/Decal: Move Size Without Preserving UV", typeof(SceneView), KeyCode.Keypad2, ShortcutModifiers.Action)]
-        static void EnterEditModeWithoutPreservingUV(ShortcutArguments args)
-        {
-            var bounds = (owner as DecalProjectorComponentEditor).GetBoundsGetter();
-            ChangeEditMode(currentEditMode = kEditShapeWithoutPreservingUV, bounds, owner);
-        }
+        static void EnterEditModeWithoutPreservingUV(ShortcutArguments args) =>
+            ChangeEditMode(kEditShapeWithoutPreservingUV, (owner as DecalProjectorComponentEditor).GetBoundsGetter(), owner);
         
         [Shortcut("HDRP/Decal: Stop Editing", typeof(SceneView), KeyCode.Keypad0, ShortcutModifiers.Action)]
-        static void ExitEditMode(ShortcutArguments args)
-        {
-            currentEditMode = SceneViewEditMode.None;
-            QuitEditMode();
-        }
+        static void ExitEditMode(ShortcutArguments args) => QuitEditMode();
     }
 }
