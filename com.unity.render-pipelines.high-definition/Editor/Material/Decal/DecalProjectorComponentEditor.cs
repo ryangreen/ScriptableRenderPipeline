@@ -34,6 +34,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             kEditShapeWithoutPreservingUV
         };
         static SceneViewEditMode currentEditMode;
+        static bool modeSwitched;
 
         static GUIContent[] k_EditLabels = null;
         static GUIContent[] editLabels => k_EditLabels ?? (k_EditLabels = new GUIContent[]
@@ -61,13 +62,29 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             m_FadeFactor = serializedObject.FindProperty("m_FadeFactor");
 
             owner = this;
+            onEditModeStartDelegate += NotifyEnterMode;
+            onEditModeEndDelegate += NotifyExitMode;
         }
-
+        
         private void OnDisable()
         {
             m_DecalProjectorComponent.OnMaterialChange -= OnMaterialChange;
 
             owner = null;
+            onEditModeStartDelegate -= NotifyEnterMode;
+            onEditModeEndDelegate -= NotifyExitMode;
+        }
+        
+        void NotifyEnterMode(Editor editor, SceneViewEditMode mode)
+        {
+            if (editor is DecalProjectorComponentEditor && !modeSwitched)
+                currentEditMode = mode;
+        }
+
+        void NotifyExitMode(Editor editor)
+        {
+            if (editor is DecalProjectorComponentEditor && !modeSwitched)
+                currentEditMode = SceneViewEditMode.None;
         }
 
         private void OnDestroy() =>
@@ -101,11 +118,13 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     default:
                         throw new System.ArgumentException("Unknown Decal edition mode");
                 }
+                modeSwitched = true;
                 EditorApplication.delayCall += () => ChangeEditMode(targetMode, HDEditorUtils.GetBoundsGetter(owner)(), owner);
             }
             else if(!evt.shift && currentEditMode != editMode)
             {
                 EditorApplication.delayCall += () => ChangeEditMode(currentEditMode, HDEditorUtils.GetBoundsGetter(owner)(), owner);
+                modeSwitched = false;
             }
         }
 
