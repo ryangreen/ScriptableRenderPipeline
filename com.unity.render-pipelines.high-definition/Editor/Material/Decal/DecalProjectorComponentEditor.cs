@@ -2,12 +2,14 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering.HDPipeline;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.ShortcutManagement;
+using static UnityEditorInternal.EditMode;
 
 namespace UnityEditor.Experimental.Rendering.HDPipeline
 {
     [CustomEditor(typeof(DecalProjectorComponent))]
     [CanEditMultipleObjects]
-    public class DecalProjectorComponentEditor : Editor
+    public partial class DecalProjectorComponentEditor : Editor
     {
         private MaterialEditor m_MaterialEditor = null;
         private DecalProjectorComponent m_DecalProjectorComponent = null;
@@ -18,12 +20,29 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         private SerializedProperty m_UVBiasProperty;
         private SerializedProperty m_AffectsTransparencyProperty;
         private SerializedProperty m_Size;
-        private SerializedProperty m_IsCropModeEnabledProperty;
         private SerializedProperty m_FadeFactor;
 
         private DecalProjectorComponentHandle m_Handle = new DecalProjectorComponentHandle();
 
         private int m_LayerMask;
+
+        const SceneViewEditMode kEditShapePreservingUV = (SceneViewEditMode)90;
+        const SceneViewEditMode kEditShapeWithoutPreservingUV = (SceneViewEditMode)91;
+        static readonly SceneViewEditMode[] k_EditModes = new SceneViewEditMode[]
+        {
+            kEditShapePreservingUV,
+            kEditShapeWithoutPreservingUV
+        };
+        static SceneViewEditMode currentEditMode;
+
+        static GUIContent[] k_EditLabels = null;
+        static GUIContent[] editLabels => k_EditLabels ?? (k_EditLabels = new GUIContent[]
+        {
+            EditorGUIUtility.TrIconContent("PreMatCube", kEditShapePreservingUVTooltip),
+            EditorGUIUtility.TrIconContent("SceneViewOrtho", kEditShapeWithoutPreservingUVTooltip)
+        });
+
+        static Editor owner;
 
         private void OnEnable()
         {
@@ -39,27 +58,58 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             m_UVBiasProperty = serializedObject.FindProperty("m_UVBias");
             m_AffectsTransparencyProperty = serializedObject.FindProperty("m_AffectsTransparency");
             m_Size = serializedObject.FindProperty("m_Size");
-            m_IsCropModeEnabledProperty = serializedObject.FindProperty("m_IsCropModeEnabled");
             m_FadeFactor = serializedObject.FindProperty("m_FadeFactor");
+
+            owner = this;
         }
 
         private void OnDisable()
         {
             m_DecalProjectorComponent.OnMaterialChange -= OnMaterialChange;
+
+            owner = null;
         }
 
-        private void OnDestroy()
-        {
+        private void OnDestroy() =>
             DestroyImmediate(m_MaterialEditor);
-        }
 
-        public void OnMaterialChange()
-        {
+        public void OnMaterialChange() =>
             // Update material editor with the new material
             m_MaterialEditor = (MaterialEditor)CreateEditor(m_DecalProjectorComponent.Mat);
-        }
 
         void OnSceneGUI()
+        {
+            DrawHandles();
+            AdditionalShortcut();
+        }
+
+        void AdditionalShortcut()
+        {
+            var evt = Event.current;
+
+            if(evt.shift && currentEditMode == editMode && (currentEditMode == kEditShapePreservingUV || currentEditMode == kEditShapeWithoutPreservingUV))
+            {
+                SceneViewEditMode targetMode;
+                switch (editMode)
+                {
+                    case kEditShapePreservingUV:
+                        targetMode = kEditShapeWithoutPreservingUV;
+                        break;
+                    case kEditShapeWithoutPreservingUV:
+                        targetMode = kEditShapePreservingUV;
+                        break;
+                    default:
+                        throw new System.ArgumentException("Unknown Decal edition mode");
+                }
+                EditorApplication.delayCall += () => ChangeEditMode(targetMode, HDEditorUtils.GetBoundsGetter(owner)(), owner);
+            }
+            else if(!evt.shift && currentEditMode != editMode)
+            {
+                EditorApplication.delayCall += () => ChangeEditMode(currentEditMode, HDEditorUtils.GetBoundsGetter(owner)(), owner);
+            }
+        }
+
+        void DrawHandles()
         {
             var mat = Handles.matrix;
             var col = Handles.color;
@@ -85,7 +135,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 Vector3 boundsSizeCurrentOS = m_Handle.size;
                 Vector3 boundsMinCurrentOS = m_Handle.size * -0.5f + m_Handle.center;
 
-                if (m_DecalProjectorComponent.m_IsCropModeEnabled)
+                if (editMode == kEditShapePreservingUV)
                 {
                     // Treat decal projector bounds as a crop tool, rather than a scale tool.
                     // Compute a new uv scale and bias terms to pin decal projection pixels in world space, irrespective of projector bounds.
@@ -127,34 +177,42 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             Handles.color = col;
         }
 
+        Bounds GetBoundsGetter()
+        {
+            var bounds = new Bounds();
+            var decalTransform = ((Component)target).transform;
+            bounds.Encapsulate(decalTransform.position);
+            return bounds;
+        }
+
         public override void OnInspectorGUI()
         {
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_IsCropModeEnabledProperty, new GUIContent("Crop Decal with Gizmo"));
 
-            EditorGUILayout.PropertyField(m_Size);
-            EditorGUILayout.PropertyField(m_MaterialProperty);
-            EditorGUILayout.PropertyField(m_DrawDistanceProperty);
-            EditorGUILayout.Slider(m_FadeScaleProperty, 0.0f, 1.0f, new GUIContent("Distance fade scale"));
-            EditorGUILayout.PropertyField(m_UVScaleProperty);
-            EditorGUILayout.PropertyField(m_UVBiasProperty);
-            EditorGUILayout.Slider(m_FadeFactor, 0.0f, 1.0f);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.FlexibleSpace();
+                DoInspectorToolbar(k_EditModes, editLabels, GetBoundsGetter, this);
+                GUILayout.FlexibleSpace();
+            }
+
+            EditorGUILayout.PropertyField(m_Size, kSizeContent);
+            EditorGUILayout.PropertyField(m_MaterialProperty, kMaterialContent);
+            EditorGUILayout.PropertyField(m_DrawDistanceProperty, kDistanceContent);
+            EditorGUILayout.Slider(m_FadeScaleProperty, 0.0f, 1.0f, kFadeScaleContent);
+            EditorGUILayout.PropertyField(m_UVScaleProperty, kUVScaleContent);
+            EditorGUILayout.PropertyField(m_UVBiasProperty, kUVBiasContent);
+            EditorGUILayout.Slider(m_FadeFactor, 0.0f, 1.0f, kFadeFactorContent);
 
             // only display the affects transparent property if material is HDRP/decal
             if (DecalSystem.IsHDRenderPipelineDecal(m_DecalProjectorComponent.Mat.shader.name))
-            {
-                EditorGUILayout.PropertyField(m_AffectsTransparencyProperty, new GUIContent("Affects Transparent Material"));
-            }
+                EditorGUILayout.PropertyField(m_AffectsTransparencyProperty, kAffectTransparentContent);
 
             if (EditorGUI.EndChangeCheck())
-            {
                 serializedObject.ApplyModifiedProperties();
-            }
 
             if(m_LayerMask != m_DecalProjectorComponent.gameObject.layer)
-            {
                 m_DecalProjectorComponent.OnValidate();
-            }
 
             if (m_MaterialEditor != null)
             {
@@ -176,6 +234,27 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     m_MaterialEditor.OnInspectorGUI();
                 }
             }
+        }
+
+        [Shortcut("HDRP/Decal: Move Size Preserving UV", typeof(SceneView), KeyCode.Keypad1, ShortcutModifiers.Action)]
+        static void EnterEditModePreservingUV(ShortcutArguments args)
+        {
+            var bounds = (owner as DecalProjectorComponentEditor).GetBoundsGetter();
+            ChangeEditMode(currentEditMode = kEditShapePreservingUV, bounds, owner);
+        }
+
+        [Shortcut("HDRP/Decal: Move Size Without Preserving UV", typeof(SceneView), KeyCode.Keypad2, ShortcutModifiers.Action)]
+        static void EnterEditModeWithoutPreservingUV(ShortcutArguments args)
+        {
+            var bounds = (owner as DecalProjectorComponentEditor).GetBoundsGetter();
+            ChangeEditMode(currentEditMode = kEditShapeWithoutPreservingUV, bounds, owner);
+        }
+        
+        [Shortcut("HDRP/Decal: Stop Editing", typeof(SceneView), KeyCode.Keypad0, ShortcutModifiers.Action)]
+        static void ExitEditMode(ShortcutArguments args)
+        {
+            currentEditMode = SceneViewEditMode.None;
+            QuitEditMode();
         }
     }
 }
