@@ -14,7 +14,7 @@ namespace UnityEngine.Rendering
     {
         static bool m_Loaded = false;
 
-        static AntialiasingMode s_SceneViewAntialiasing = AntialiasingMode.None;
+        static AntialiasingMode s_SceneViewAntialiasing;
         public static AntialiasingMode sceneViewAntialiasing
         {
             get => s_SceneViewAntialiasing;
@@ -26,7 +26,7 @@ namespace UnityEngine.Rendering
             }
         }
 
-        static bool s_SceneViewStopNaNs = false;
+        static bool s_SceneViewStopNaNs;
         public static bool sceneViewStopNaNs
         {
             get => s_SceneViewStopNaNs;

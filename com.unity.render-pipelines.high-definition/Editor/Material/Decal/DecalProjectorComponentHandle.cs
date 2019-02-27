@@ -12,6 +12,8 @@ namespace UnityEditor.IMGUI.Controls
 
         public UnityEngine.Vector3 size { get { return GetSize(); } set { SetSize(value); } }
 
+        public void DrawHull(bool b) => DrawWireframe();
+
         protected override void DrawWireframe()
         {
             Handles.DrawWireCube(center, size);

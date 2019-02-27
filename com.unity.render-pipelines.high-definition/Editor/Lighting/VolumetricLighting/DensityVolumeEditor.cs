@@ -150,7 +150,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                             densityVolume.parameters.size = shapeBox.size;
                             
                             Vector3 delta = densityVolume.transform.rotation * shapeBox.center - densityVolume.transform.position;
-                            densityVolume.transform.position += delta; ;
+                            densityVolume.transform.position += delta;
                         }
                     }
                     break;

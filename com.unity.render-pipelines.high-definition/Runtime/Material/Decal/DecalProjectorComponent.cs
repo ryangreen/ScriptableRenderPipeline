@@ -123,23 +123,6 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             }
         }
 
-        public void OnDrawGizmosSelected()
-        {
-            // if this object is selected there is a chance the transform was changed so update culling info
-            Vector4 uvScaleBias = new Vector4(m_UVScale.x, m_UVScale.y, m_UVBias.x, m_UVBias.y);
-            Matrix4x4 sizeOffset = Matrix4x4.Translate(m_Offset) * Matrix4x4.Scale(m_Size);
-            DecalSystem.instance.UpdateCachedData(transform, sizeOffset, m_DrawDistance, m_FadeScale, uvScaleBias, m_AffectsTransparency, m_Handle, gameObject.layer, m_FadeFactor);
-        }
-
-        public void OnDrawGizmos()
-        {
-            var col = new Color(0.0f, 0.7f, 1f, 0.5f);
-            Matrix4x4 offsetScale = Matrix4x4.Translate(m_Offset) * Matrix4x4.Scale(m_Size);
-            Gizmos.matrix = transform.localToWorldMatrix * offsetScale;
-            Gizmos.color = col;
-            Gizmos.DrawWireCube(Vector3.zero, Vector3.one);
-        }
-
         public bool IsValid()
         {
             // don't draw if no material or if material is the default decal material (empty)
