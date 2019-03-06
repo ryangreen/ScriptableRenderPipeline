@@ -89,29 +89,12 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 s_Handle.monoHandle = false;
             }
             s_Owner = this;
-            onEditModeStartDelegate += NotifyEnterMode;
-            onEditModeEndDelegate += NotifyExitMode;
         }
         
         private void OnDisable()
         {
             m_DecalProjectorComponent.OnMaterialChange -= OnMaterialChange;
-
             s_Owner = null;
-            onEditModeStartDelegate -= NotifyEnterMode;
-            onEditModeEndDelegate -= NotifyExitMode;
-        }
-
-        void NotifyEnterMode(Editor editor, SceneViewEditMode mode)
-        {
-            if (editor is DecalProjectorComponentEditor && !s_ModeSwitched)
-                s_CurrentEditMode = mode;
-        }
-
-        void NotifyExitMode(Editor editor)
-        {
-            if (editor is DecalProjectorComponentEditor && !s_ModeSwitched)
-                s_CurrentEditMode = SceneViewEditMode.None;
         }
 
         private void OnDestroy() =>
@@ -123,42 +106,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
         void OnSceneGUI()
         {
-            AdditionalShortcut();
             DrawHandles();
-        }
-
-        void AdditionalShortcut()
-        {
-            var evt = Event.current;
-
-            if (evt.control && s_CurrentEditMode == editMode && (s_CurrentEditMode == k_EditShapePreservingUV || s_CurrentEditMode == k_EditShapeWithoutPreservingUV))
-            {
-                SceneViewEditMode targetMode;
-                switch (editMode)
-                {
-                    case k_EditShapePreservingUV:
-                        targetMode = k_EditShapeWithoutPreservingUV;
-                        break;
-                    case k_EditShapeWithoutPreservingUV:
-                        targetMode = k_EditShapePreservingUV;
-                        break;
-                    default:
-                        throw new System.ArgumentException("Unknown Decal edition mode");
-                }
-                s_ModeSwitched = true;
-                EditorApplication.delayCall += () => ChangeEditMode(targetMode, HDEditorUtils.GetBoundsGetter(s_Owner)(), s_Owner);
-            }
-            else if (!evt.control && s_CurrentEditMode != editMode)
-            {
-                if (editMode != SceneViewEditMode.None)
-                {
-                    // Occurs when disabling Edit mode while control is still pressed, then code pass here on control key released
-                    EditorApplication.delayCall += () => ChangeEditMode(s_CurrentEditMode, HDEditorUtils.GetBoundsGetter(s_Owner)(), s_Owner);
-                }
-                else
-                    s_CurrentEditMode = SceneViewEditMode.None;
-                s_ModeSwitched = false;
-            }
         }
 
         void DrawHandles()
@@ -186,8 +134,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                         Vector3 boundsSizeCurrentOS = s_Handle.size;
                         Vector3 boundsMinCurrentOS = s_Handle.size * -0.5f + s_Handle.center;
 
-                        if ((s_CurrentEditMode == k_EditShapePreservingUV && !s_ModeSwitched)
-                            || (s_CurrentEditMode == k_EditShapeWithoutPreservingUV && s_ModeSwitched))
+                        if (editMode == k_EditShapePreservingUV)
                         {
                             // Treat decal projector bounds as a crop tool, rather than a scale tool.
                             // Compute a new uv scale and bias terms to pin decal projection pixels in world space, irrespective of projector bounds.
@@ -371,20 +318,37 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             }
         }
 
-        [Shortcut("HDRP/Decal: Handle changing size stretching UV", typeof(SceneView), KeyCode.Keypad1, ShortcutModifiers.Shift)]
+        [Shortcut("HDRP/Decal: Handle changing size stretching UV", typeof(SceneView), KeyCode.Keypad1, ShortcutModifiers.Action)]
         static void EnterEditModeWithoutPreservingUV(ShortcutArguments args) =>
             ChangeEditMode(k_EditShapeWithoutPreservingUV, (s_Owner as DecalProjectorComponentEditor).GetBoundsGetter(), s_Owner);
 
-        [Shortcut("HDRP/Decal: Handle changing size cropping UV", typeof(SceneView), KeyCode.Keypad2, ShortcutModifiers.Shift)]
+        [Shortcut("HDRP/Decal: Handle changing size cropping UV", typeof(SceneView), KeyCode.Keypad2, ShortcutModifiers.Action)]
         static void EnterEditModePreservingUV(ShortcutArguments args) =>
             ChangeEditMode(k_EditShapePreservingUV, (s_Owner as DecalProjectorComponentEditor).GetBoundsGetter(), s_Owner);
 
         //[TODO: add editable pivot. Uncomment this when ready]
-        //[Shortcut("HDRP/Decal: Handle changing pivot position while preserving UV position", typeof(SceneView), KeyCode.Keypad3, ShortcutModifiers.Shift)]
+        //[Shortcut("HDRP/Decal: Handle changing pivot position while preserving UV position", typeof(SceneView), KeyCode.Keypad3, ShortcutModifiers.Action)]
         //static void EnterEditModePivotPreservingUV(ShortcutArguments args) =>
         //    ChangeEditMode(k_EditUV, (s_Owner as DecalProjectorComponentEditor).GetBoundsGetter(), s_Owner);
 
-        [Shortcut("HDRP/Decal: Stop Editing", typeof(SceneView), KeyCode.Keypad0, ShortcutModifiers.Shift)]
+        [Shortcut("HDRP/Decal: Handle swap between cropping and stretching UV", typeof(SceneView), KeyCode.W, ShortcutModifiers.Action)]
+        static void SwappingEditUVMode(ShortcutArguments args)
+        {
+            SceneViewEditMode targetMode = SceneViewEditMode.None;
+            switch (editMode)
+            {
+                case k_EditShapePreservingUV:
+                    targetMode = k_EditShapeWithoutPreservingUV;
+                    break;
+                case k_EditShapeWithoutPreservingUV:
+                    targetMode = k_EditShapePreservingUV;
+                    break;
+            }
+            if (targetMode != SceneViewEditMode.None)
+                ChangeEditMode(targetMode, (s_Owner as DecalProjectorComponentEditor).GetBoundsGetter(), s_Owner);
+        }
+
+        [Shortcut("HDRP/Decal: Stop Editing", typeof(SceneView), KeyCode.Keypad0, ShortcutModifiers.Action)]
         static void ExitEditMode(ShortcutArguments args) => QuitEditMode();
     }
 }
