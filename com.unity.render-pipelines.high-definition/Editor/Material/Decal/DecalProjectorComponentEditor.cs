@@ -131,7 +131,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         {
             var evt = Event.current;
 
-            if (evt.shift && s_CurrentEditMode == editMode && (s_CurrentEditMode == k_EditShapePreservingUV || s_CurrentEditMode == k_EditShapeWithoutPreservingUV))
+            if (evt.control && s_CurrentEditMode == editMode && (s_CurrentEditMode == k_EditShapePreservingUV || s_CurrentEditMode == k_EditShapeWithoutPreservingUV))
             {
                 SceneViewEditMode targetMode;
                 switch (editMode)
@@ -148,11 +148,11 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 s_ModeSwitched = true;
                 EditorApplication.delayCall += () => ChangeEditMode(targetMode, HDEditorUtils.GetBoundsGetter(s_Owner)(), s_Owner);
             }
-            else if (!evt.shift && s_CurrentEditMode != editMode)
+            else if (!evt.control && s_CurrentEditMode != editMode)
             {
                 if (editMode != SceneViewEditMode.None)
                 {
-                    // Occurs when disabling Edit mode while shift is still pressed, then code pass here on shift key released
+                    // Occurs when disabling Edit mode while control is still pressed, then code pass here on control key released
                     EditorApplication.delayCall += () => ChangeEditMode(s_CurrentEditMode, HDEditorUtils.GetBoundsGetter(s_Owner)(), s_Owner);
                 }
                 else
@@ -359,20 +359,20 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             }
         }
 
-        [Shortcut("HDRP/Decal: Handle changing size stretching UV", typeof(SceneView), KeyCode.Keypad1, ShortcutModifiers.Action)]
+        [Shortcut("HDRP/Decal: Handle changing size stretching UV", typeof(SceneView), KeyCode.Keypad1, ShortcutModifiers.Shift)]
         static void EnterEditModeWithoutPreservingUV(ShortcutArguments args) =>
             ChangeEditMode(k_EditShapeWithoutPreservingUV, (s_Owner as DecalProjectorComponentEditor).GetBoundsGetter(), s_Owner);
 
-        [Shortcut("HDRP/Decal: Handle changing size cropping UV", typeof(SceneView), KeyCode.Keypad2, ShortcutModifiers.Action)]
+        [Shortcut("HDRP/Decal: Handle changing size cropping UV", typeof(SceneView), KeyCode.Keypad2, ShortcutModifiers.Shift)]
         static void EnterEditModePreservingUV(ShortcutArguments args) =>
             ChangeEditMode(k_EditShapePreservingUV, (s_Owner as DecalProjectorComponentEditor).GetBoundsGetter(), s_Owner);
 
         //[TODO: add editable pivot. Uncomment this when ready]
-        //[Shortcut("HDRP/Decal: Handle changing pivot position while preserving UV position", typeof(SceneView), KeyCode.Keypad3, ShortcutModifiers.Action)]
+        //[Shortcut("HDRP/Decal: Handle changing pivot position while preserving UV position", typeof(SceneView), KeyCode.Keypad3, ShortcutModifiers.Shift)]
         //static void EnterEditModePivotPreservingUV(ShortcutArguments args) =>
         //    ChangeEditMode(k_EditUV, (s_Owner as DecalProjectorComponentEditor).GetBoundsGetter(), s_Owner);
 
-        [Shortcut("HDRP/Decal: Stop Editing", typeof(SceneView), KeyCode.Keypad0, ShortcutModifiers.Action)]
+        [Shortcut("HDRP/Decal: Stop Editing", typeof(SceneView), KeyCode.Keypad0, ShortcutModifiers.Shift)]
         static void ExitEditMode(ShortcutArguments args) => QuitEditMode();
     }
 }
