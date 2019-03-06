@@ -25,7 +25,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         SerializedProperty m_Size;
         SerializedProperty m_FadeFactor;
         
-
         //static DecalProjectorComponentHandle s_Handle = new DecalProjectorComponentHandle();
         static HierarchicalBox s_Handle;
 
@@ -193,10 +192,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                             // Treat decal projector bounds as a crop tool, rather than a scale tool.
                             // Compute a new uv scale and bias terms to pin decal projection pixels in world space, irrespective of projector bounds.
                             m_DecalProjectorComponent.m_UVScale.x *= Mathf.Max(1e-5f, boundsSizeCurrentOS.x) / Mathf.Max(1e-5f, boundsSizePreviousOS.x);
-                            m_DecalProjectorComponent.m_UVScale.y *= Mathf.Max(1e-5f, boundsSizeCurrentOS.z) / Mathf.Max(1e-5f, boundsSizePreviousOS.z);
+                            m_DecalProjectorComponent.m_UVScale.y *= Mathf.Max(1e-5f, boundsSizeCurrentOS.y) / Mathf.Max(1e-5f, boundsSizePreviousOS.y);
 
                             m_DecalProjectorComponent.m_UVBias.x += (boundsMinCurrentOS.x - boundsMinPreviousOS.x) / Mathf.Max(1e-5f, boundsSizeCurrentOS.x) * m_DecalProjectorComponent.m_UVScale.x;
-                            m_DecalProjectorComponent.m_UVBias.y += (boundsMinCurrentOS.z - boundsMinPreviousOS.z) / Mathf.Max(1e-5f, boundsSizeCurrentOS.z) * m_DecalProjectorComponent.m_UVScale.y;
+                            m_DecalProjectorComponent.m_UVBias.y += (boundsMinCurrentOS.y - boundsMinPreviousOS.y) / Mathf.Max(1e-5f, boundsSizeCurrentOS.y) * m_DecalProjectorComponent.m_UVScale.y;
                         }
 
                         if (PrefabUtility.IsPartOfNonAssetPrefabInstance(m_DecalProjectorComponent))
@@ -228,19 +227,20 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     }
                 }
             }
-            else if (editMode == k_EditUV)
-            {
-                //[TODO]
-            }
+
+            //[TODO: add editable pivot. Uncomment this when ready]
+            //else if (editMode == k_EditUV)
+            //{
+            //    //here should be handles code to manipulate the pivot without changing the UV
+            //}
         }
 
         [DrawGizmo(GizmoType.Selected | GizmoType.Active)]
         static void UpdateProjectedResult(DecalProjectorComponent decalProjector, GizmoType gizmoType)
         {
             // Smoothly update the decal image projected
-            Vector4 uvScaleBias = new Vector4(decalProjector.m_UVScale.x, decalProjector.m_UVScale.y, decalProjector.m_UVBias.x, decalProjector.m_UVBias.y);
-            Matrix4x4 sizeOffset = Matrix4x4.Translate(decalProjector.m_Offset) * Matrix4x4.Scale(decalProjector.m_Size);
-            DecalSystem.instance.UpdateCachedData(decalProjector.transform, sizeOffset, decalProjector.m_DrawDistance, decalProjector.m_FadeScale, uvScaleBias, decalProjector.m_AffectsTransparency, decalProjector.Handle, decalProjector.gameObject.layer, decalProjector.m_FadeFactor);
+            Matrix4x4 sizeOffset = Matrix4x4.Translate(decalProjector.offset) * Matrix4x4.Scale(decalProjector.size);
+            DecalSystem.instance.UpdateCachedData(decalProjector.position, decalProjector.rotation, sizeOffset, decalProjector.m_DrawDistance, decalProjector.m_FadeScale, decalProjector.uvScaleBias, decalProjector.m_AffectsTransparency, decalProjector.Handle, decalProjector.gameObject.layer, decalProjector.m_FadeFactor);
         }
 
         [DrawGizmo(GizmoType.Selected | GizmoType.Active)]
@@ -255,23 +255,33 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
                 int controlID = GUIUtility.GetControlID(s_Handle.GetHashCode(), FocusType.Passive);
                 Quaternion arrowRotation = Quaternion.LookRotation(Vector3.down, Vector3.right);
-                float arrowSize = decalProjector.m_Size.y * 0.25f;
+                float arrowSize = decalProjector.m_Size.z * 0.25f;
                 Vector3 pivot = decalProjector.m_Offset;
-                Vector3 projectedPivot = pivot + decalProjector.m_Size.y * 0.5f * Vector3.up;
-                Handles.ArrowHandleCap(controlID, projectedPivot, arrowRotation, arrowSize, EventType.Repaint);
-                Handles.SphereHandleCap(controlID, pivot, Quaternion.identity, 0.02f, EventType.Repaint);
+                Vector3 projectedPivot = pivot + decalProjector.m_Size.z * 0.5f * Vector3.back;
+                Handles.ArrowHandleCap(controlID, projectedPivot, Quaternion.identity, arrowSize, EventType.Repaint);
 
-                Color c = Color.white;
-                c.a = 0.2f;
-                Handles.color = c;
-                Handles.DrawLine(projectedPivot, projectedPivot + decalProjector.m_Size.x * 0.5f * Vector3.left);
-                Handles.DrawLine(projectedPivot, projectedPivot + decalProjector.m_Size.z * 0.5f * Vector3.forward);
+                //[TODO: add editable pivot. Uncomment this when ready]
+                //draw pivot
+                //Handles.SphereHandleCap(controlID, pivot, Quaternion.identity, 0.02f, EventType.Repaint);
+                //Color c = Color.white;
+                //c.a = 0.2f;
+                //Handles.color = c;
+                //Handles.DrawLine(projectedPivot, projectedPivot + decalProjector.m_Size.x * 0.5f * Vector3.right);
+                //Handles.DrawLine(projectedPivot, projectedPivot + decalProjector.m_Size.y * 0.5f * Vector3.up);
+                //Handles.DrawLine(projectedPivot, projectedPivot + decalProjector.m_Size.z * 0.5f * Vector3.forward);
 
-                //Color face = Color.white;
-                //face.a = 0.1f;
-                //Vector3 start = decalProjector.m_Offset - decalProjector.m_Size * 0.5f;
-                //Vector2 size = new Vector2(decalProjector.m_Size.x, decalProjector.m_Size.z);
-                //Handles.DrawSolidRectangleWithOutline(new Rect(new Vector2(start.x, start.z) - decalProjector.m_UVBias * size, size), face, Color.white);
+                //draw UV
+                Color face = Color.green;
+                face.a = 0.1f;
+                Vector2 size = new Vector2(
+                    (decalProjector.m_UVScale.x > 100000 || decalProjector.m_UVScale.x < -100000 ? 0f : 1f / decalProjector.m_UVScale.x) * decalProjector.m_Size.x,
+                    (decalProjector.m_UVScale.x > 100000 || decalProjector.m_UVScale.x < -100000 ? 0f : 1f / decalProjector.m_UVScale.y) * decalProjector.m_Size.y
+                    );
+                Vector2 start = (Vector2)projectedPivot - new Vector2(decalProjector.m_UVBias.x * size.x, decalProjector.m_UVBias.y * size.y);
+                using (new Handles.DrawingScope(face, Matrix4x4.TRS(decalProjector.transform.position - decalProjector.transform.rotation * (decalProjector.m_Size * 0.5f + decalProjector.m_Offset.z * Vector3.back), decalProjector.transform.rotation, Vector3.one)))
+                {
+                    Handles.DrawSolidRectangleWithOutline(new Rect(start, size), face, Color.white);
+                }
             }
         }
 
@@ -290,13 +300,13 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             DoInspectorToolbar(k_EditVolumeModes, editVolumeLabels, GetBoundsGetter, this);
-            DoInspectorToolbar(k_EditPivotModes, editPivotLabels, GetBoundsGetter, this);
+
+            //[TODO: add editable pivot. Uncomment this when ready]
+            //DoInspectorToolbar(k_EditPivotModes, editPivotLabels, GetBoundsGetter, this);
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space();
-
-            EditorGUILayout.LabelField((s_CurrentEditMode).ToString());
 
             EditorGUILayout.PropertyField(m_Size, k_SizeContent);
             EditorGUILayout.PropertyField(m_MaterialProperty, k_MaterialContent);
@@ -357,9 +367,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         static void EnterEditModePreservingUV(ShortcutArguments args) =>
             ChangeEditMode(k_EditShapePreservingUV, (s_Owner as DecalProjectorComponentEditor).GetBoundsGetter(), s_Owner);
 
-        [Shortcut("HDRP/Decal: Handle changing pivot position while preserving UV position", typeof(SceneView), KeyCode.Keypad3, ShortcutModifiers.Action)]
-        static void EnterEditModePivotPreservingUV(ShortcutArguments args) =>
-            ChangeEditMode(k_EditUV, (s_Owner as DecalProjectorComponentEditor).GetBoundsGetter(), s_Owner);
+        //[TODO: add editable pivot. Uncomment this when ready]
+        //[Shortcut("HDRP/Decal: Handle changing pivot position while preserving UV position", typeof(SceneView), KeyCode.Keypad3, ShortcutModifiers.Action)]
+        //static void EnterEditModePivotPreservingUV(ShortcutArguments args) =>
+        //    ChangeEditMode(k_EditUV, (s_Owner as DecalProjectorComponentEditor).GetBoundsGetter(), s_Owner);
 
         [Shortcut("HDRP/Decal: Stop Editing", typeof(SceneView), KeyCode.Keypad0, ShortcutModifiers.Action)]
         static void ExitEditMode(ShortcutArguments args) => QuitEditMode();
