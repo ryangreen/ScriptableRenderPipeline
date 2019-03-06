@@ -47,12 +47,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 this.m_Handle = value;
             }
         }
-
-        public Material Mat
-        {
-            get { return this.m_Material; }
-        }
-
+        
         public void OnEnable()
         {
             if (m_Material == null)

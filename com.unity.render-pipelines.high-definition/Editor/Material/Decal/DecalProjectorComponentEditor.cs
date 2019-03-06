@@ -15,7 +15,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
     public partial class DecalProjectorComponentEditor : Editor
     {
         MaterialEditor m_MaterialEditor = null;
-        DecalProjectorComponent m_DecalProjectorComponent = null;
         SerializedProperty m_MaterialProperty;
         SerializedProperty m_DrawDistanceProperty;
         SerializedProperty m_FadeScaleProperty;
@@ -25,9 +24,42 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         SerializedProperty m_Size;
         SerializedProperty m_FadeFactor;
         
-        static HierarchicalBox s_Handle;
+        int layerMask => (target as Component).gameObject.layer;
+        bool layerMaskHasMultipleValue
+        {
+            get
+            {
+                if (targets.Length < 2)
+                    return false;
+                int layerMask = (targets[0] as Component).gameObject.layer;
+                for (int index = 0; index < targets.Length; ++index)
+                {
+                    if ((targets[index] as Component).gameObject.layer != layerMask)
+                        return true;
+                }
+                return false;
+            }
+        }
 
-        int m_LayerMask;
+        bool showAffectTransparency => DecalSystem.IsHDRenderPipelineDecal((target as DecalProjectorComponent).m_Material.shader.name);
+
+        bool showAffectTransparencyHaveMultipleDifferentValue
+        {
+            get
+            {
+                if (targets.Length < 2)
+                    return false;
+                bool show = DecalSystem.IsHDRenderPipelineDecal((targets[0] as DecalProjectorComponent).m_Material.shader.name);
+                for (int index = 0; index < targets.Length; ++index)
+                {
+                    if (DecalSystem.IsHDRenderPipelineDecal((targets[0] as DecalProjectorComponent).m_Material.shader.name) ^ show)
+                        return true;
+                }
+                return false;
+            }
+        }
+
+        static HierarchicalBox s_Handle;
 
         const SceneViewEditMode k_EditShapeWithoutPreservingUV = (SceneViewEditMode)90;
         const SceneViewEditMode k_EditShapePreservingUV = (SceneViewEditMode)91;
@@ -69,10 +101,12 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         private void OnEnable()
         {
             // Create an instance of the MaterialEditor
-            m_DecalProjectorComponent = (DecalProjectorComponent)target;
-            m_LayerMask = m_DecalProjectorComponent.gameObject.layer;
-            m_MaterialEditor = (MaterialEditor)CreateEditor(m_DecalProjectorComponent.Mat);
-            m_DecalProjectorComponent.OnMaterialChange += OnMaterialChange;
+            UpdateMaterialEditor();
+            foreach (var decalProjector in targets)
+            {
+                (decalProjector as DecalProjectorComponent).OnMaterialChange += UpdateMaterialEditor;
+            }
+
             m_MaterialProperty = serializedObject.FindProperty("m_Material");
             m_DrawDistanceProperty = serializedObject.FindProperty("m_DrawDistance");
             m_FadeScaleProperty = serializedObject.FindProperty("m_FadeScale");
@@ -92,30 +126,45 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         
         private void OnDisable()
         {
-            m_DecalProjectorComponent.OnMaterialChange -= OnMaterialChange;
+            foreach (var decalProjector in targets)
+            {
+                (decalProjector as DecalProjectorComponent).OnMaterialChange -= UpdateMaterialEditor;
+            }
             s_Owner = null;
         }
 
         private void OnDestroy() =>
             DestroyImmediate(m_MaterialEditor);
 
-        public void OnMaterialChange() =>
+        public void UpdateMaterialEditor()
+        {
             // Update material editor with the new material
-            m_MaterialEditor = (MaterialEditor)CreateEditor(m_DecalProjectorComponent.Mat);
+            UnityEngine.Object[] materials = new UnityEngine.Object[targets.Length];
+            for (int index = 0; index < targets.Length; ++index)
+            {
+                materials[index] = (targets[index] as DecalProjectorComponent).m_Material;
+            }
+            m_MaterialEditor = (MaterialEditor)CreateEditor(materials);
+        }
 
         void OnSceneGUI()
         {
+            //called on each targets
+
             DrawHandles();
         }
 
         void DrawHandles()
         {
+            //Note: each target need to be handled individually to allow multi edition
+            DecalProjectorComponent decalProjector = target as DecalProjectorComponent;
+
             if (editMode == k_EditShapePreservingUV || editMode == k_EditShapeWithoutPreservingUV)
             {
-                using (new Handles.DrawingScope(Color.white, Matrix4x4.TRS(m_DecalProjectorComponent.transform.position, m_DecalProjectorComponent.transform.rotation, Vector3.one)))
+                using (new Handles.DrawingScope(Color.white, Matrix4x4.TRS(decalProjector.transform.position, decalProjector.transform.rotation, Vector3.one)))
                 {
-                    s_Handle.center = m_DecalProjectorComponent.m_Offset;
-                    s_Handle.size = m_DecalProjectorComponent.m_Size;
+                    s_Handle.center = decalProjector.m_Offset;
+                    s_Handle.size = decalProjector.m_Size;
 
                     Vector3 boundsSizePreviousOS = s_Handle.size;
                     Vector3 boundsMinPreviousOS = s_Handle.size * -0.5f + s_Handle.center;
@@ -125,10 +174,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     if (EditorGUI.EndChangeCheck())
                     {
                         // Adjust decal transform if handle changed.
-                        Undo.RecordObject(m_DecalProjectorComponent, "Decal Projector Change");
+                        Undo.RecordObject(decalProjector, "Decal Projector Change");
 
-                        m_DecalProjectorComponent.m_Size = s_Handle.size;
-                        m_DecalProjectorComponent.m_Offset = s_Handle.center;
+                        decalProjector.m_Size = s_Handle.size;
+                        decalProjector.m_Offset = s_Handle.center;
 
                         Vector3 boundsSizeCurrentOS = s_Handle.size;
                         Vector3 boundsMinCurrentOS = s_Handle.size * -0.5f + s_Handle.center;
@@ -137,35 +186,35 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                         {
                             // Treat decal projector bounds as a crop tool, rather than a scale tool.
                             // Compute a new uv scale and bias terms to pin decal projection pixels in world space, irrespective of projector bounds.
-                            m_DecalProjectorComponent.m_UVScale.x *= Mathf.Max(1e-5f, boundsSizeCurrentOS.x) / Mathf.Max(1e-5f, boundsSizePreviousOS.x);
-                            m_DecalProjectorComponent.m_UVScale.y *= Mathf.Max(1e-5f, boundsSizeCurrentOS.y) / Mathf.Max(1e-5f, boundsSizePreviousOS.y);
+                            decalProjector.m_UVScale.x *= Mathf.Max(1e-5f, boundsSizeCurrentOS.x) / Mathf.Max(1e-5f, boundsSizePreviousOS.x);
+                            decalProjector.m_UVScale.y *= Mathf.Max(1e-5f, boundsSizeCurrentOS.y) / Mathf.Max(1e-5f, boundsSizePreviousOS.y);
 
-                            m_DecalProjectorComponent.m_UVBias.x += (boundsMinCurrentOS.x - boundsMinPreviousOS.x) / Mathf.Max(1e-5f, boundsSizeCurrentOS.x) * m_DecalProjectorComponent.m_UVScale.x;
-                            m_DecalProjectorComponent.m_UVBias.y += (boundsMinCurrentOS.y - boundsMinPreviousOS.y) / Mathf.Max(1e-5f, boundsSizeCurrentOS.y) * m_DecalProjectorComponent.m_UVScale.y;
+                            decalProjector.m_UVBias.x += (boundsMinCurrentOS.x - boundsMinPreviousOS.x) / Mathf.Max(1e-5f, boundsSizeCurrentOS.x) * decalProjector.m_UVScale.x;
+                            decalProjector.m_UVBias.y += (boundsMinCurrentOS.y - boundsMinPreviousOS.y) / Mathf.Max(1e-5f, boundsSizeCurrentOS.y) * decalProjector.m_UVScale.y;
                         }
 
-                        if (PrefabUtility.IsPartOfNonAssetPrefabInstance(m_DecalProjectorComponent))
+                        if (PrefabUtility.IsPartOfNonAssetPrefabInstance(decalProjector))
                         {
-                            PrefabUtility.RecordPrefabInstancePropertyModifications(m_DecalProjectorComponent);
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(decalProjector);
                         }
                     }
 
                     // Automatically recenter our transform component if necessary.
                     // In order to correctly handle world-space snapping, we only perform this recentering when the user is no longer interacting with the gizmo.
-                    if ((GUIUtility.hotControl == 0) && (m_DecalProjectorComponent.m_Offset != Vector3.zero))
+                    if ((GUIUtility.hotControl == 0) && (decalProjector.m_Offset != Vector3.zero))
                     {
                         // Both the DecalProjectorComponent, and the transform will be modified.
                         // The undo system will automatically group all RecordObject() calls here into a single action.
-                        Undo.RecordObject(m_DecalProjectorComponent, "Decal Projector Change");
+                        Undo.RecordObject(decalProjector, "Decal Projector Change");
 
                         // Re-center the transform to the center of the decal projector bounds,
                         // while maintaining the world-space coordinates of the decal projector boundings vertices.
-                        m_DecalProjectorComponent.transform.Translate(m_DecalProjectorComponent.m_Offset, Space.Self);
+                        decalProjector.transform.Translate(decalProjector.m_Offset, Space.Self);
 
-                        m_DecalProjectorComponent.m_Offset = Vector3.zero;
-                        if (PrefabUtility.IsPartOfNonAssetPrefabInstance(m_DecalProjectorComponent))
+                        decalProjector.m_Offset = Vector3.zero;
+                        if (PrefabUtility.IsPartOfNonAssetPrefabInstance(decalProjector))
                         {
-                            PrefabUtility.RecordPrefabInstancePropertyModifications(m_DecalProjectorComponent);
+                            PrefabUtility.RecordPrefabInstancePropertyModifications(decalProjector);
                         }
                     }
                 }
@@ -271,29 +320,43 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             EditorGUILayout.PropertyField(m_DrawDistanceProperty, k_DistanceContent);
 
             EditorGUI.BeginChangeCheck();
+            EditorGUI.showMixedValue = m_FadeScaleProperty.hasMultipleDifferentValues;
             float fadeDistancePercent = m_FadeScaleProperty.floatValue * 100f;
             fadeDistancePercent = EditorGUILayout.Slider(k_FadeScaleContent, fadeDistancePercent, 0f, 100f);
             if (EditorGUI.EndChangeCheck())
                 m_FadeScaleProperty.floatValue = fadeDistancePercent * 0.01f;
+            EditorGUI.showMixedValue = false;
 
             EditorGUILayout.PropertyField(m_UVScaleProperty, k_UVScaleContent);
             EditorGUILayout.PropertyField(m_UVBiasProperty, k_UVBiasContent);
 
             EditorGUI.BeginChangeCheck();
+            EditorGUI.showMixedValue = m_FadeFactor.hasMultipleDifferentValues;
             float fadePercent = m_FadeFactor.floatValue * 100f;
             fadePercent = EditorGUILayout.Slider(k_FadeFactorContent, fadePercent, 0f, 100f);
             if (EditorGUI.EndChangeCheck())
                 m_FadeFactor.floatValue = fadePercent * 0.01f;
+            EditorGUI.showMixedValue = false;
 
             // only display the affects transparent property if material is HDRP/decal
-            if (DecalSystem.IsHDRenderPipelineDecal(m_DecalProjectorComponent.Mat.shader.name))
+            if (showAffectTransparencyHaveMultipleDifferentValue)
+            {
+                using (new EditorGUI.DisabledScope(true))
+                    EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Multiple material type in selection"));
+            }
+            else if (showAffectTransparency)
                 EditorGUILayout.PropertyField(m_AffectsTransparencyProperty, k_AffectTransparentContent);
 
             if (EditorGUI.EndChangeCheck())
                 serializedObject.ApplyModifiedProperties();
 
-            if(m_LayerMask != m_DecalProjectorComponent.gameObject.layer)
-                m_DecalProjectorComponent.OnValidate();
+            if (layerMaskHasMultipleValue || layerMask != (target as Component).gameObject.layer)
+            {
+                foreach (var decalProjector in targets)
+                {
+                    (decalProjector as DecalProjectorComponent).OnValidate();
+                }
+            }
 
             if (m_MaterialEditor != null)
             {
@@ -306,7 +369,10 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 var hdrp = GraphicsSettings.renderPipelineAsset as HDRenderPipelineAsset;
                 if (hdrp != null)
                 {
-                    isDefaultMaterial = m_DecalProjectorComponent.Mat == hdrp.GetDefaultDecalMaterial();
+                    foreach(var decalProjector in targets)
+                    {
+                        isDefaultMaterial |= (decalProjector as DecalProjectorComponent).m_Material == hdrp.GetDefaultDecalMaterial();
+                    }
                 }
                 using (new EditorGUI.DisabledGroupScope(isDefaultMaterial))
                 {
