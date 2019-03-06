@@ -25,7 +25,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         SerializedProperty m_Size;
         SerializedProperty m_FadeFactor;
         
-        //static DecalProjectorComponentHandle s_Handle = new DecalProjectorComponentHandle();
         static HierarchicalBox s_Handle;
 
         int m_LayerMask;
