@@ -236,8 +236,23 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         static void UpdateProjectedResult(DecalProjectorComponent decalProjector, GizmoType gizmoType)
         {
             // Smoothly update the decal image projected
-            Matrix4x4 sizeOffset = Matrix4x4.Translate(decalProjector.offset) * Matrix4x4.Scale(decalProjector.size);
-            DecalSystem.instance.UpdateCachedData(decalProjector.position, decalProjector.rotation, sizeOffset, decalProjector.m_DrawDistance, decalProjector.m_FadeScale, decalProjector.uvScaleBias, decalProjector.m_AffectsTransparency, decalProjector.Handle, decalProjector.gameObject.layer, decalProjector.m_FadeFactor);
+            // Note: due to change projection from -Y to Z and inside Y/Z manipulation
+            // the only way to respect former behavior is to separate z axis from the other.
+            // Z mapping of offset should not be used anymore or must be fixed.
+            Vector3 offsetWithoutZ = decalProjector.offset;
+            offsetWithoutZ.y = 0;
+            Matrix4x4 sizeOffset = Matrix4x4.Translate(offsetWithoutZ) * Matrix4x4.Scale(decalProjector.size);
+            DecalSystem.instance.UpdateCachedData(
+                decalProjector.position + decalProjector.transform.forward * decalProjector.m_Offset.z,
+                decalProjector.rotation,
+                sizeOffset,
+                decalProjector.m_DrawDistance,
+                decalProjector.m_FadeScale,
+                decalProjector.uvScaleBias,
+                decalProjector.m_AffectsTransparency,
+                decalProjector.Handle,
+                decalProjector.gameObject.layer,
+                decalProjector.m_FadeFactor);
         }
 
         [DrawGizmo(GizmoType.Selected | GizmoType.Active)]
