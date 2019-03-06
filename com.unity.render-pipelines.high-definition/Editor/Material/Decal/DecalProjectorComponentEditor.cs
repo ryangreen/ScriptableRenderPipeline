@@ -214,10 +214,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
 
                         // Re-center the transform to the center of the decal projector bounds,
                         // while maintaining the world-space coordinates of the decal projector boundings vertices.
-                        m_DecalProjectorComponent.transform.Translate(
-                            Vector3.Scale(m_DecalProjectorComponent.m_Offset, m_DecalProjectorComponent.transform.localScale),
-                            Space.Self
-                        );
+                        m_DecalProjectorComponent.transform.Translate(m_DecalProjectorComponent.m_Offset, Space.Self);
 
                         m_DecalProjectorComponent.m_Offset = Vector3.zero;
                         if (PrefabUtility.IsPartOfNonAssetPrefabInstance(m_DecalProjectorComponent))
