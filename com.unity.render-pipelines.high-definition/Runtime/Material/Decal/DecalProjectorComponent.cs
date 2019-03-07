@@ -32,7 +32,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         /// <summary>current size in a way the DecalSystem will be able to use it</summary>
         internal Vector3 size => new Vector3(m_Size.x, m_Size.z, m_Size.y);
         /// <summary>current size in a way the DecalSystem will be able to use it</summary>
-        internal Vector3 offset => new Vector3(m_Offset.x, m_Offset.z, m_Offset.y);
+        internal Vector3 offset => new Vector3(m_Offset.x, -m_Offset.z, m_Offset.y);
         /// <summary>current uv parameters in a way the DecalSystem will be able to use it</summary>
         internal Vector4 uvScaleBias => new Vector4(m_UVScale.x, m_UVScale.y, m_UVBias.x, m_UVBias.y);
 

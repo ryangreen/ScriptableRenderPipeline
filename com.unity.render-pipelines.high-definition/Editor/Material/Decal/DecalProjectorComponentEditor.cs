@@ -162,6 +162,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             {
                 using (new Handles.DrawingScope(Color.white, Matrix4x4.TRS(decalProjector.transform.position, decalProjector.transform.rotation, Vector3.one)))
                 {
+                    bool needToRefreshDecalProjector = false;
+
                     handle.center = decalProjector.m_Offset;
                     handle.size = decalProjector.m_Size;
 
@@ -172,6 +174,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     handle.DrawHandle();
                     if (EditorGUI.EndChangeCheck())
                     {
+                        needToRefreshDecalProjector = true;
+
                         // Adjust decal transform if handle changed.
                         Undo.RecordObject(decalProjector, "Decal Projector Change");
 
@@ -202,6 +206,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                     // In order to correctly handle world-space snapping, we only perform this recentering when the user is no longer interacting with the gizmo.
                     if ((GUIUtility.hotControl == 0) && (decalProjector.m_Offset != Vector3.zero))
                     {
+                        needToRefreshDecalProjector = true;
+
                         // Both the DecalProjectorComponent, and the transform will be modified.
                         // The undo system will automatically group all RecordObject() calls here into a single action.
                         Undo.RecordObject(decalProjector, "Decal Projector Change");
@@ -216,6 +222,13 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                             PrefabUtility.RecordPrefabInstancePropertyModifications(decalProjector);
                         }
                     }
+
+                    if (needToRefreshDecalProjector)
+                    {
+                        // Smoothly update the decal image projected
+                        Matrix4x4 sizeOffset = Matrix4x4.Translate(decalProjector.offset) * Matrix4x4.Scale(decalProjector.size);
+                        DecalSystem.instance.UpdateCachedData(decalProjector.position, decalProjector.rotation, sizeOffset, decalProjector.m_DrawDistance, decalProjector.m_FadeScale, decalProjector.uvScaleBias, decalProjector.m_AffectsTransparency, decalProjector.Handle, decalProjector.gameObject.layer, decalProjector.m_FadeFactor);
+                    }
                 }
             }
 
@@ -224,29 +237,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             //{
             //    //here should be handles code to manipulate the pivot without changing the UV
             //}
-        }
-
-        [DrawGizmo(GizmoType.Selected | GizmoType.Active)]
-        static void UpdateProjectedResult(DecalProjectorComponent decalProjector, GizmoType gizmoType)
-        {
-            // Smoothly update the decal image projected
-            // Note: due to change projection from -Y to Z and inside Y/Z manipulation
-            // the only way to respect former behavior is to separate z axis from the other.
-            // Z mapping of offset should not be used anymore or must be fixed.
-            Vector3 offsetWithoutZ = decalProjector.offset;
-            offsetWithoutZ.y = 0;
-            Matrix4x4 sizeOffset = Matrix4x4.Translate(offsetWithoutZ) * Matrix4x4.Scale(decalProjector.size);
-            DecalSystem.instance.UpdateCachedData(
-                decalProjector.position + decalProjector.transform.forward * decalProjector.m_Offset.z,
-                decalProjector.rotation,
-                sizeOffset,
-                decalProjector.m_DrawDistance,
-                decalProjector.m_FadeScale,
-                decalProjector.uvScaleBias,
-                decalProjector.m_AffectsTransparency,
-                decalProjector.Handle,
-                decalProjector.gameObject.layer,
-                decalProjector.m_FadeFactor);
         }
 
         [DrawGizmo(GizmoType.Selected | GizmoType.Active)]
