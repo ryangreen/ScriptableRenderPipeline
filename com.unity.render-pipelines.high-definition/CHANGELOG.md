@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed normal blend edition handles on DensityVolume
 - Fixed "look at" edition mode of Rotation tool for DecalProjectorComponent
 - Fixed issue when switching mode in ReflectionProbe and PlanarReflectionProbe
+- Fixed issue where migratable component version where not always serialized when part of prefab's instance
 
 ### Changed
 - When rendering reflection probe disable all specular lighting and for metals use fresnelF0 as diffuse color for bake lighting.
