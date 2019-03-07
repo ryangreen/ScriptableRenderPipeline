@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added a Parallax Occlusion Mapping node
 - Added a new FrameSettings: Specular Lighting to toggle the specular during the rendering
 - Added an option in preferences to toggle the light emission normalization
+- Added Homothety and Symetry quick edition modifier on volume used in ReflectionProbe, PlanarReflectionProbe and DensityVolume
+- Added multi-edition support for DecalProjectorComponent
 
 ### Fixed
 - Fixed diffusion profile upgrade breaking package when upgrading to a new version
@@ -38,13 +40,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed multi-edition light handles and inspector shapes
 - Fixed light's LightLayer field when multi-editing
 - Fixed normal blend edition handles on DensityVolume
-
-### Added
-- Added a new FrameSettings: Specular Lighting to toggle the specular during the rendering
+- Fixed "look at" edition mode of Rotation tool for DecalProjectorComponent
+- Fixed issue when switching mode in ReflectionProbe and PlanarReflectionProbe
 
 ### Changed
 - When rendering reflection probe disable all specular lighting and for metals use fresnelF0 as diffuse color for bake lighting.
 - DensityVolume scripting API will no longuer allow to change between advance and normal edition mode
+- Updated handles for DecalProjectorComponent for enhanced spacial position readability and have edition mode for better SceneView management
+- DecalProjectorComponent are now scale independent in order to have reliable metric unit (see new Size field for changing the size of the volume)
 
 ## [6.4.0-preview] - 2019-02-21
 
