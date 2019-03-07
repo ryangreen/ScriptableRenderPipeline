@@ -37,6 +37,12 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 decal.m_Offset.z = newZ;
                 decal.m_Offset.x *= decal.transform.lossyScale.x;
 
+                //// Special in prefab case
+                //if (PrefabUtility.IsPartOfNonAssetPrefabInstance(decal))
+                //{
+                //    PrefabUtility.RecordPrefabInstancePropertyModifications(decal);
+                //}
+
                 // Update decal system
                 if (decal.m_Handle != null)
                     DecalSystem.instance.RemoveDecal(decal.m_Handle);
@@ -46,8 +52,8 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
         );
 
         [SerializeField]
-        Version m_HDProbeVersion;
-        Version IVersionable<Version>.version { get => m_HDProbeVersion; set => m_HDProbeVersion = value; }
+        Version m_Version;
+        Version IVersionable<Version>.version { get => m_Version; set => m_Version = value; }
 
         void Awake() => k_Migration.Migrate(this);
     }
