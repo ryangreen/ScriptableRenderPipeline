@@ -26,16 +26,16 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     child.RotateAround(decal.transform.position, decal.transform.right, -90f);
                 }
 
-                // Invese Y and Z in the size so we keep same aspect
+                // Inverse Y and Z in the size so we keep same aspect
                 float newZ = decal.m_Size.y;
                 decal.m_Size.y = decal.m_Size.z;
                 decal.m_Size.z = newZ;
 
-                // Invese Y and Z in the offset so we keep same aspect and take into account new Scale independence
-                newZ = -decal.m_Offset.y * decal.transform.lossyScale.y / decal.transform.localScale.y;
-                decal.m_Offset.y = decal.m_Offset.z * decal.transform.lossyScale.z / decal.transform.localScale.z;
+                // Inverse Y and Z in the offset so we keep same aspect and take into account new Scale independence
+                newZ = -decal.m_Offset.y * decal.transform.lossyScale.y;
+                decal.m_Offset.y = decal.m_Offset.z * decal.transform.lossyScale.z;
                 decal.m_Offset.z = newZ;
-                decal.m_Offset.x *= decal.transform.lossyScale.x / decal.transform.localScale.x;
+                decal.m_Offset.x *= decal.transform.lossyScale.x;
 
                 // Update decal system
                 if (decal.m_Handle != null)

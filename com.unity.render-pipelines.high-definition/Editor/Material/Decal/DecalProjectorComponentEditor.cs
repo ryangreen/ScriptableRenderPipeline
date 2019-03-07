@@ -202,6 +202,8 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                         }
                     }
 
+                    // [TODO: remove this part. As soon as you select component that are old enough to have Offset not reseted, it will change the position
+                    // It is also incompatible with pivot management]
                     // Automatically recenter our transform component if necessary.
                     // In order to correctly handle world-space snapping, we only perform this recentering when the user is no longer interacting with the gizmo.
                     if ((GUIUtility.hotControl == 0) && (decalProjector.m_Offset != Vector3.zero))
