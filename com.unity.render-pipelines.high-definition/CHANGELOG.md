@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Adding real time area light shadow support
 - Added depth offset input in shader graph master nodes
 - Added a Parallax Occlusion Mapping node
+- Added a new FrameSettings: Specular Lighting to toggle the specular during the rendering
+- Added an option in preferences to toggle the light emission normalization
 
 ### Fixed
 - Fixed diffusion profile upgrade breaking package when upgrading to a new version
@@ -27,21 +29,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed failing builds when light explorer window is open
 - Fixed cascade shadows border sometime causing artefacts between cascades
 - Restored shadows in the Cascade Shadow debug visualization
-- Fixed an issue with layered lit shader and height based blend where inactive layers would still have influence over the result.
+- Fixed an issue with layered lit shader and height based blend where inactive layers would still have influence over the result
+- Fixed multi-selection handles color for DensityVolume
+- Fixed multi-edition inspector's blend distances for HDReflectionProbe, PlanarReflectionProbe and DensityVolume
+- Fixed metric distance that changed along size in DensityVolume
+- Fixed DensityVolume shape handles that have not same behaviour in advance and normal edition mode
+- `camera.RenderToCubemap` use proper face culling
+- Fixed multi-edition light handles and inspector shapes
+- Fixed light's LightLayer field when multi-editing
+- Fixed normal blend edition handles on DensityVolume
 
 ### Added
 - Added a new FrameSettings: Specular Lighting to toggle the specular during the rendering
 
 ### Changed
 - When rendering reflection probe disable all specular lighting and for metals use fresnelF0 as diffuse color for bake lighting.
-
-
-### Added
-- Added a new FrameSettings: Specular Lighting to toggle the specular during the rendering
-
-### Changed
-- When rendering reflection probe disable all specular lighting and for metals use fresnelF0 as diffuse color for bake lighting.
-
+- DensityVolume scripting API will no longuer allow to change between advance and normal edition mode
 
 ## [6.4.0-preview] - 2019-02-21
 
