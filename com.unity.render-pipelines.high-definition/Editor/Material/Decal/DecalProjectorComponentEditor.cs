@@ -60,8 +60,20 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         }
 
         static HierarchicalBox s_Handle;
+        static HierarchicalBox handle
+        {
+            get
+            {
+                if (s_Handle == null || s_Handle.Equals(null))
+                {
+                    s_Handle = new HierarchicalBox(k_GizmoColorBase, k_BaseHandlesColor);
+                    s_Handle.monoHandle = false;
+                }
+                return s_Handle;
+            }
+        }
 
-        const SceneViewEditMode k_EditShapeWithoutPreservingUV = (SceneViewEditMode)90;
+    const SceneViewEditMode k_EditShapeWithoutPreservingUV = (SceneViewEditMode)90;
         const SceneViewEditMode k_EditShapePreservingUV = (SceneViewEditMode)91;
         const SceneViewEditMode k_EditUV = (SceneViewEditMode)92;
         static readonly SceneViewEditMode[] k_EditVolumeModes = new SceneViewEditMode[]
@@ -89,17 +101,11 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         });
 
         static Editor s_Owner;
-
-        static Action RepaintAll;
-        static DecalProjectorComponentEditor()
-        {
-            var repaintAllMethideInfo = typeof(UnityEditor.Tools).GetMethod("RepaintAllToolViews", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-            var repaintAllLambda = Expression.Lambda<Action>(Expression.Call(null, repaintAllMethideInfo));
-            RepaintAll = repaintAllLambda.Compile();
-        }
-        
+                
         private void OnEnable()
         {
+            s_Owner = this;
+            
             // Create an instance of the MaterialEditor
             UpdateMaterialEditor();
             foreach (var decalProjector in targets)
@@ -107,6 +113,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 (decalProjector as DecalProjectorComponent).OnMaterialChange += UpdateMaterialEditor;
             }
 
+            // Fetch serialized properties
             m_MaterialProperty = serializedObject.FindProperty("m_Material");
             m_DrawDistanceProperty = serializedObject.FindProperty("m_DrawDistance");
             m_FadeScaleProperty = serializedObject.FindProperty("m_FadeScale");
@@ -115,13 +122,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             m_AffectsTransparencyProperty = serializedObject.FindProperty("m_AffectsTransparency");
             m_Size = serializedObject.FindProperty("m_Size");
             m_FadeFactor = serializedObject.FindProperty("m_FadeFactor");
-
-            if (s_Handle == null || s_Handle.Equals(null))
-            {
-                s_Handle = new HierarchicalBox(k_GizmoColorBase, k_BaseHandlesColor);
-                s_Handle.monoHandle = false;
-            }
-            s_Owner = this;
         }
         
         private void OnDisable()
@@ -150,7 +150,6 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
         void OnSceneGUI()
         {
             //called on each targets
-
             DrawHandles();
         }
 
@@ -163,24 +162,24 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             {
                 using (new Handles.DrawingScope(Color.white, Matrix4x4.TRS(decalProjector.transform.position, decalProjector.transform.rotation, Vector3.one)))
                 {
-                    s_Handle.center = decalProjector.m_Offset;
-                    s_Handle.size = decalProjector.m_Size;
+                    handle.center = decalProjector.m_Offset;
+                    handle.size = decalProjector.m_Size;
 
-                    Vector3 boundsSizePreviousOS = s_Handle.size;
-                    Vector3 boundsMinPreviousOS = s_Handle.size * -0.5f + s_Handle.center;
+                    Vector3 boundsSizePreviousOS = handle.size;
+                    Vector3 boundsMinPreviousOS = handle.size * -0.5f + handle.center;
 
                     EditorGUI.BeginChangeCheck();
-                    s_Handle.DrawHandle();
+                    handle.DrawHandle();
                     if (EditorGUI.EndChangeCheck())
                     {
                         // Adjust decal transform if handle changed.
                         Undo.RecordObject(decalProjector, "Decal Projector Change");
 
-                        decalProjector.m_Size = s_Handle.size;
-                        decalProjector.m_Offset = s_Handle.center;
+                        decalProjector.m_Size = handle.size;
+                        decalProjector.m_Offset = handle.center;
 
-                        Vector3 boundsSizeCurrentOS = s_Handle.size;
-                        Vector3 boundsMinCurrentOS = s_Handle.size * -0.5f + s_Handle.center;
+                        Vector3 boundsSizeCurrentOS = handle.size;
+                        Vector3 boundsMinCurrentOS = handle.size * -0.5f + handle.center;
 
                         if (editMode == k_EditShapePreservingUV)
                         {
@@ -256,11 +255,11 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
             //draw them scale independent
             using (new Handles.DrawingScope(Color.white, Matrix4x4.TRS(decalProjector.transform.position, decalProjector.transform.rotation, Vector3.one)))
             {
-                s_Handle.center = decalProjector.m_Offset;
-                s_Handle.size = decalProjector.m_Size;
-                s_Handle.DrawHull(editMode == k_EditShapePreservingUV || editMode == k_EditShapeWithoutPreservingUV);
+                handle.center = decalProjector.m_Offset;
+                handle.size = decalProjector.m_Size;
+                handle.DrawHull(editMode == k_EditShapePreservingUV || editMode == k_EditShapeWithoutPreservingUV);
 
-                int controlID = GUIUtility.GetControlID(s_Handle.GetHashCode(), FocusType.Passive);
+                int controlID = GUIUtility.GetControlID(handle.GetHashCode(), FocusType.Passive);
                 Quaternion arrowRotation = Quaternion.LookRotation(Vector3.down, Vector3.right);
                 float arrowSize = decalProjector.m_Size.z * 0.25f;
                 Vector3 pivot = decalProjector.m_Offset;
