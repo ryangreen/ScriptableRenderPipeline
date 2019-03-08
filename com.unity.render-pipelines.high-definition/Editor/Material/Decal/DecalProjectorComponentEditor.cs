@@ -52,7 +52,7 @@ namespace UnityEditor.Experimental.Rendering.HDPipeline
                 bool show = DecalSystem.IsHDRenderPipelineDecal((targets[0] as DecalProjectorComponent).m_Material.shader.name);
                 for (int index = 0; index < targets.Length; ++index)
                 {
-                    if (DecalSystem.IsHDRenderPipelineDecal((targets[0] as DecalProjectorComponent).m_Material.shader.name) ^ show)
+                    if (DecalSystem.IsHDRenderPipelineDecal((targets[index] as DecalProjectorComponent).m_Material.shader.name) ^ show)
                         return true;
                 }
                 return false;

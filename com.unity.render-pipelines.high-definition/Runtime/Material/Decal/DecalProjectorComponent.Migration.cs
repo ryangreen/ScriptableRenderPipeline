@@ -36,13 +36,7 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                 decal.m_Offset.y = decal.m_Offset.z * decal.transform.lossyScale.z;
                 decal.m_Offset.z = newZ;
                 decal.m_Offset.x *= decal.transform.lossyScale.x;
-
-                //// Special in prefab case
-                //if (PrefabUtility.IsPartOfNonAssetPrefabInstance(decal))
-                //{
-                //    PrefabUtility.RecordPrefabInstancePropertyModifications(decal);
-                //}
-
+                
                 // Update decal system
                 if (decal.m_Handle != null)
                     DecalSystem.instance.RemoveDecal(decal.m_Handle);
