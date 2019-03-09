@@ -79,6 +79,11 @@ namespace UnityEngine.Rendering.LWRP
             bool isOffscreenDepthTexture = camera.targetTexture != null && camera.targetTexture.format == RenderTextureFormat.Depth;
             if (isOffscreenDepthTexture)
             {
+                ConfigureCameraTarget(BuiltinRenderTextureType.CameraTarget, BuiltinRenderTextureType.CameraTarget);
+
+                for (int i = 0; i < rendererFeatures.Count; ++i)
+                    rendererFeatures[i].AddRenderPasses(this, ref renderingData);
+
                 EnqueuePass(m_RenderOpaqueForwardPass);
                 EnqueuePass(m_DrawSkyboxPass);
                 EnqueuePass(m_RenderTransparentForwardPass);
