@@ -75,6 +75,16 @@ namespace UnityEngine.Rendering.LWRP
             Camera camera = renderingData.cameraData.camera;
             RenderTextureDescriptor cameraTargetDescriptor = renderingData.cameraData.cameraTargetDescriptor;
 
+            // Special path for depth only offscreen cameras. Only write opaques + transparents. 
+            bool isOffscreenDepthTexture = camera.targetTexture != null && camera.targetTexture.format == RenderTextureFormat.Depth;
+            if (isOffscreenDepthTexture)
+            {
+                EnqueuePass(m_RenderOpaqueForwardPass);
+                EnqueuePass(m_DrawSkyboxPass);
+                EnqueuePass(m_RenderTransparentForwardPass);
+                return;
+            }
+
             bool mainLightShadows = m_MainLightShadowCasterPass.Setup(ref renderingData);
             bool additionalLightShadows = m_AdditionalLightsShadowCasterPass.Setup(ref renderingData);
             bool resolveShadowsInScreenSpace = mainLightShadows && renderingData.shadowData.requiresScreenSpaceShadowResolve;
