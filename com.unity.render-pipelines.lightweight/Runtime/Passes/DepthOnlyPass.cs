@@ -22,9 +22,9 @@ namespace UnityEngine.Rendering.LWRP
         /// <summary>
         /// Create the DepthOnlyPass
         /// </summary>
-        public DepthOnlyPass(RenderPassEvent evt, RenderQueueRange renderQueueRange)
+        public DepthOnlyPass(RenderPassEvent evt, RenderQueueRange renderQueueRange, LayerMask layerMask)
         {
-            m_FilteringSettings = new FilteringSettings(renderQueueRange);
+            m_FilteringSettings = new FilteringSettings(renderQueueRange, layerMask);
             renderPassEvent = evt;
         }
 

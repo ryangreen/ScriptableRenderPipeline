@@ -10,15 +10,18 @@ namespace UnityEditor.Rendering.LWRP
         {
             public static readonly GUIContent RendererTitle = new GUIContent("Forward Renderer", "Custom Forward Renderer for LWRP.");
             public static readonly GUIContent OpaqueMask = new GUIContent("Default Layer Mask", "Controls which layers to globally include in the Custom Forward Renderer.");
+            public static readonly GUIContent defaultStencilStateLabel = EditorGUIUtility.TrTextContent("Default Stencil State", "Configure stencil state for the opaque and transparent render passes.");
         }
         
         SerializedProperty m_OpaqueLayerMask;
         SerializedProperty m_TransparentLayerMask;
-        
+        SerializedProperty m_DefaultStencilState;
+
         private void OnEnable()
         {
             m_OpaqueLayerMask = serializedObject.FindProperty("m_OpaqueLayerMask");
             m_TransparentLayerMask = serializedObject.FindProperty("m_TransparentLayerMask");
+            m_DefaultStencilState = serializedObject.FindProperty("m_DefaultStencilState");
         }
 
         public override void OnInspectorGUI()
@@ -32,6 +35,8 @@ namespace UnityEditor.Rendering.LWRP
             if (EditorGUI.EndChangeCheck())  // We copy the opaque mask to the transparent mask, later we might expose both
                 m_TransparentLayerMask.intValue = m_OpaqueLayerMask.intValue;
             EditorGUILayout.Space();
+
+            EditorGUILayout.PropertyField(m_DefaultStencilState, Styles.defaultStencilStateLabel);
 
             serializedObject.ApplyModifiedProperties();
             
