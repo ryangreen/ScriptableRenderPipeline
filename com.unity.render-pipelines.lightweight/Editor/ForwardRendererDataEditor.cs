@@ -36,7 +36,9 @@ namespace UnityEditor.Rendering.LWRP
                 m_TransparentLayerMask.intValue = m_OpaqueLayerMask.intValue;
             EditorGUILayout.Space();
 
-            EditorGUILayout.PropertyField(m_DefaultStencilState, Styles.defaultStencilStateLabel);
+            EditorGUILayout.LabelField("Overrides", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(m_DefaultStencilState, Styles.defaultStencilStateLabel, true);
+            EditorGUILayout.Space();
 
             serializedObject.ApplyModifiedProperties();
             
