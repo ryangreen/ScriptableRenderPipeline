@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using UnityEditor.Graphs;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering.LWRP;
+using System.Text.RegularExpressions;
 
 namespace UnityEditor.Rendering.LWRP
 {
@@ -16,14 +16,16 @@ namespace UnityEditor.Rendering.LWRP
             public static readonly GUIContent RenderFeatures =
                 new GUIContent("Renderer Features", 
                 "Features to include in this renderer.\nTo add or remove features, use the plus and minus at the bottom of this box.");
-
-            public static readonly GUIContent RenderFeatureHeader =
-                new GUIContent("Empty Pass", "This pass does not exist.");
             
             public static readonly GUIContent PassNameField =
                 new GUIContent("Name", "This is the name for the current pass.");
 
-            public static GUIStyle BoldLabelSimple;
+            public static GUIStyle BoldLabelSimple = new GUIStyle(EditorStyles.label);
+
+            static Styles()
+            {
+                BoldLabelSimple.fontStyle = FontStyle.Bold;
+            }
         }
 
         SavedBool[] m_Foldouts;
@@ -53,9 +55,6 @@ namespace UnityEditor.Rendering.LWRP
             m_RenderPasses = serializedObject.FindProperty("m_RendererFeatures");
             CreateFoldoutBools();
 
-            Styles.BoldLabelSimple = new GUIStyle(EditorStyles.label);
-            Styles.BoldLabelSimple.fontStyle = FontStyle.Bold;
-
             m_PassesList = new ReorderableList(m_RenderPasses.serializedObject,
                                                 m_RenderPasses,
                                                 true,
@@ -81,22 +80,25 @@ namespace UnityEditor.Rendering.LWRP
 
                 if (element.objectReferenceValue != null)
                 {
-                    Styles.RenderFeatureHeader.text = element.objectReferenceValue.name;
-                    Styles.RenderFeatureHeader.tooltip = element.objectReferenceValue.GetType().Name;
+                    GUIContent header = new GUIContent(element.objectReferenceValue.name,
+                        element.objectReferenceValue.GetType().Name);
                     m_Foldouts[index].value =
                         EditorGUI.Foldout(headerRect,
                             m_Foldouts[index].value,
-                            Styles.RenderFeatureHeader,
+                            header,
                             true, 
                             Styles.BoldLabelSimple);
                     if (m_Foldouts[index].value)
                     {
+                        EditorGUI.indentLevel++;
                         propRect.y += EditorUtils.Styles.defaultLineSpace;
                         EditorGUI.BeginChangeCheck();
-                        element.objectReferenceValue.name =
-                            EditorGUI.DelayedTextField(propRect, Styles.PassNameField, element.objectReferenceValue.name);
+                        var objName = EditorGUI.DelayedTextField(propRect, Styles.PassNameField,
+                            element.objectReferenceValue.name);
                         if (EditorGUI.EndChangeCheck())
                         {
+                            objName = ValidatePassName(objName);
+                            element.objectReferenceValue.name = objName;
                             AssetDatabase.SaveAssets();
                         }
 
@@ -112,6 +114,7 @@ namespace UnityEditor.Rendering.LWRP
 
                         if (EditorGUI.EndChangeCheck())
                             elementSO.ApplyModifiedProperties();
+                        EditorGUI.indentLevel--;
                     }
                 }
                 else
@@ -198,6 +201,9 @@ namespace UnityEditor.Rendering.LWRP
                     nameSpace = nameSpace.Replace('.', '/');
                     path = string.Format($"{nameSpace}/{path}");
                 }
+
+                path = Regex.Replace(Regex.Replace(path, "([a-z])([A-Z])", "$1 $2"),
+                    "([A-Z])([A-Z][a-z])", "$1 $2");
                 menu.AddItem(new GUIContent(path), false, AddPassHandler, type.Name);
             }
             menu.ShowAsContext();
@@ -230,6 +236,12 @@ namespace UnityEditor.Rendering.LWRP
             var newHeaderState = m_Foldouts[newIndex].value;
             m_Foldouts[oldIndex].value = newHeaderState;
             m_Foldouts[newIndex].value = oldHeaderState;
+        }
+
+        private string ValidatePassName(string name)
+        {
+            name = Regex.Replace(name, @"[^a-zA-Z0-9 ]", "");
+            return name;
         }
         
         private void AddPassHandler(object pass)
