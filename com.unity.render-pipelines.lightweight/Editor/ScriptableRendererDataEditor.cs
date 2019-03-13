@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using UnityEditor.Graphs;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering.LWRP;
@@ -18,6 +19,11 @@ namespace UnityEditor.Rendering.LWRP
 
             public static readonly GUIContent RenderFeatureHeader =
                 new GUIContent("Empty Pass", "This pass does not exist.");
+            
+            public static readonly GUIContent PassNameField =
+                new GUIContent("Name", "This is the name for the current pass.");
+
+            public static GUIStyle BoldLabelSimple;
         }
 
         SavedBool[] m_Foldouts;
@@ -47,6 +53,9 @@ namespace UnityEditor.Rendering.LWRP
             m_RenderPasses = serializedObject.FindProperty("m_RendererFeatures");
             CreateFoldoutBools();
 
+            Styles.BoldLabelSimple = new GUIStyle(EditorStyles.label);
+            Styles.BoldLabelSimple.fontStyle = FontStyle.Bold;
+
             m_PassesList = new ReorderableList(m_RenderPasses.serializedObject,
                                                 m_RenderPasses,
                                                 true,
@@ -57,6 +66,8 @@ namespace UnityEditor.Rendering.LWRP
             m_PassesList.drawElementCallback =
             (Rect rect, int index, bool isActive, bool isFocused) =>
             {
+                if(index % 2 != 0)
+                    EditorGUI.DrawRect(new Rect(rect.x - 19f, rect.y, rect.width + 23f, rect.height), new Color(0, 0, 0, 0.1f));
                 EditorGUI.BeginChangeCheck();
                 var element = m_PassesList.serializedProperty.GetArrayElementAtIndex(index);
                 var propRect = new Rect(rect.x, 
@@ -76,13 +87,14 @@ namespace UnityEditor.Rendering.LWRP
                         EditorGUI.Foldout(headerRect,
                             m_Foldouts[index].value,
                             Styles.RenderFeatureHeader,
-                            true);
+                            true, 
+                            Styles.BoldLabelSimple);
                     if (m_Foldouts[index].value)
                     {
                         propRect.y += EditorUtils.Styles.defaultLineSpace;
                         EditorGUI.BeginChangeCheck();
                         element.objectReferenceValue.name =
-                            EditorGUI.DelayedTextField(propRect, "Pass Name", element.objectReferenceValue.name);
+                            EditorGUI.DelayedTextField(propRect, Styles.PassNameField, element.objectReferenceValue.name);
                         if (EditorGUI.EndChangeCheck())
                         {
                             AssetDatabase.SaveAssets();
