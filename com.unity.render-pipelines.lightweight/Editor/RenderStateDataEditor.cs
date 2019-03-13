@@ -8,9 +8,6 @@ namespace UnityEditor.Rendering.LWRP
     {
         class Styles
         {
-            public static readonly GUIContent stencil =
-                new GUIContent("Stencil", "Stencil rendering options.");
-            
             public static readonly GUIContent overrideStencil =
                 new GUIContent("Stencil", "Override stencil rendering.");
 
