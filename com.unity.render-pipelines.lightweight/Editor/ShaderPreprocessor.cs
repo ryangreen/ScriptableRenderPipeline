@@ -53,7 +53,7 @@ namespace UnityEditor.Rendering.LWRP
             if (shader.name.Contains("HDRP"))
                 return true;
 
-            if (!CoreUtils.HasFlag(features, ShaderFeatures.MainLightShadows) &&
+            if (!features.HasFlag(ShaderFeatures.MainLightShadows) && //CoreUtils.HasFlag(features, ShaderFeatures.MainLightShadows) &&
                 shader.name.Contains("ScreenSpaceShadows"))
                 return true;
 
@@ -75,7 +75,7 @@ namespace UnityEditor.Rendering.LWRP
                 return true;
 
             if (snippetData.passType == PassType.ShadowCaster)
-                if (!CoreUtils.HasFlag(features, ShaderFeatures.MainLightShadows) && !CoreUtils.HasFlag(features, ShaderFeatures.AdditionalLightShadows))
+            if (!features.HasFlag(ShaderFeatures.MainLightShadows) && !features.HasFlag(ShaderFeatures.AdditionalLightShadows)) //CoreUtils.HasFlag(features, ShaderFeatures.MainLightShadows) && !CoreUtils.HasFlag(features, ShaderFeatures.AdditionalLightShadows))
                     return true;
 
             return false;
@@ -84,7 +84,7 @@ namespace UnityEditor.Rendering.LWRP
         bool StripUnusedFeatures(ShaderFeatures features, ShaderCompilerData compilerData)
         {
             // strip main light shadows and cascade variants
-            if (!CoreUtils.HasFlag(features, ShaderFeatures.MainLightShadows))
+            if (!features.HasFlag(ShaderFeatures.MainLightShadows))//CoreUtils.HasFlag(features, ShaderFeatures.MainLightShadows))
             {
                 if (compilerData.shaderKeywordSet.IsEnabled(m_MainLightShadows))
                     return true;
@@ -98,20 +98,21 @@ namespace UnityEditor.Rendering.LWRP
             bool isAdditionalLightShadow = compilerData.shaderKeywordSet.IsEnabled(m_AdditionalLightShadows);
 
             // Additional light are shaded per-vertex. Strip additional lights per-pixel and shadow variants
-            if (CoreUtils.HasFlag(features, ShaderFeatures.VertexLighting) &&
+            if (features.HasFlag(ShaderFeatures.VertexLighting) && //CoreUtils.HasFlag(features, ShaderFeatures.VertexLighting) &&
                 (isAdditionalLightPerPixel || isAdditionalLightShadow))
                 return true;
 
             // No additional lights
-            if (!CoreUtils.HasFlag(features, ShaderFeatures.AdditionalLights) &&
+            if (!features.HasFlag(ShaderFeatures.AdditionalLights) && //CoreUtils.HasFlag(features, ShaderFeatures.AdditionalLights) &&
                 (isAdditionalLightPerPixel || isAdditionalLightPerVertex || isAdditionalLightShadow))
                 return true;
 
             // No additional light shadows
-            if (!CoreUtils.HasFlag(features, ShaderFeatures.AdditionalLightShadows) && isAdditionalLightShadow)
+            if (!features.HasFlag(ShaderFeatures.AdditionalLightShadows) //CoreUtils.HasFlag(features, ShaderFeatures.AdditionalLightShadows) 
+                && isAdditionalLightShadow)
                 return true;
 
-            if (!CoreUtils.HasFlag(features, ShaderFeatures.SoftShadows) &&
+            if (!features.HasFlag(ShaderFeatures.SoftShadows) && //CoreUtils.HasFlag(features, ShaderFeatures.SoftShadows) &&
                 compilerData.shaderKeywordSet.IsEnabled(m_SoftShadows))
                 return true;
 

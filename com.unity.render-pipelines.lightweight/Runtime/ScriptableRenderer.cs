@@ -253,7 +253,16 @@ namespace UnityEngine.Rendering.LWRP
         void ExecuteBlock(RenderPassEvent startEvent, RenderPassEvent endEvent,
             ScriptableRenderContext context, ref RenderingData renderingData, bool submit = false)
         {
-            int currIndex = m_ActiveRenderPassQueue.FindIndex(x => (x.renderPassEvent >= startEvent && x.renderPassEvent < endEvent));
+            //int currIndex = m_ActiveRenderPassQueue.FindIndex(x => (x.renderPassEvent >= startEvent && x.renderPassEvent < endEvent));
+            int currIndex = -1;
+            for (var i = 0; i < m_ActiveRenderPassQueue.Count; i++)
+            {
+                if(m_ActiveRenderPassQueue[i].renderPassEvent >= startEvent && m_ActiveRenderPassQueue[i].renderPassEvent < endEvent)
+                {
+                    currIndex = i;
+                    break;
+                }
+            }
             if (currIndex == -1)
                 return;
 
@@ -327,18 +336,21 @@ namespace UnityEngine.Rendering.LWRP
             m_InsideStereoRenderBlock = false;
         }
 
+        internal static RenderBufferLoadAction colorLoadAction;
+        internal static RenderBufferLoadAction depthLoadAction;
+        internal static TextureDimension dimension;
         internal static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier colorAttachment, RenderTargetIdentifier depthAttachment, ClearFlag clearFlag, Color clearColor)
         {
             m_ActiveColorAttachment = colorAttachment;
             m_ActiveDepthAttachment = depthAttachment;
 
-            RenderBufferLoadAction colorLoadAction = clearFlag != ClearFlag.None ?
+            colorLoadAction = clearFlag != ClearFlag.None ?
                 RenderBufferLoadAction.DontCare : RenderBufferLoadAction.Load;
 
-            RenderBufferLoadAction depthLoadAction = CoreUtils.HasFlag(clearFlag, ClearFlag.Depth) ?
+            depthLoadAction = clearFlag.HasFlag(ClearFlag.Depth) ? //CoreUtils.HasFlag(clearFlag, ClearFlag.Depth) ?
                 RenderBufferLoadAction.DontCare : RenderBufferLoadAction.Load;
 
-            TextureDimension dimension = (m_InsideStereoRenderBlock) ? XRGraphics.eyeTextureDesc.dimension : TextureDimension.Tex2D;
+            dimension = (m_InsideStereoRenderBlock) ? XRGraphics.eyeTextureDesc.dimension : TextureDimension.Tex2D;
             SetRenderTarget(cmd, colorAttachment, colorLoadAction, RenderBufferStoreAction.Store,
                 depthAttachment, depthLoadAction, RenderBufferStoreAction.Store, clearFlag, clearColor, dimension);
         }

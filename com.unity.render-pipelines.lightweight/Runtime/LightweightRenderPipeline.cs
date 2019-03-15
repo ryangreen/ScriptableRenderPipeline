@@ -1,5 +1,6 @@
 using System;
 using Unity.Collections;
+using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.Rendering.LWRP;
@@ -120,6 +121,16 @@ namespace UnityEngine.Rendering.LWRP
             EndFrameRendering(renderContext, cameras);
         }
 
+        static Dictionary<Camera, LWRPAdditionalCameraData> additionalCameraDataCache = new Dictionary<Camera, LWRPAdditionalCameraData>();
+        static LWRPAdditionalCameraData GetLWRPAdditionalCameraData(Camera camera)
+        {
+            if (!additionalCameraDataCache.ContainsKey(camera))
+                additionalCameraDataCache.Add(camera, camera.GetComponent<LWRPAdditionalCameraData>());
+            return additionalCameraDataCache[camera];
+        }
+
+        static LWRPAdditionalCameraData additionalCameraData = null;
+
         public static void RenderSingleCamera(ScriptableRenderContext context, Camera camera)
         {
             if (!camera.TryGetCullingParameters(IsStereoEnabled(camera), out var cullingParameters))
@@ -129,9 +140,10 @@ namespace UnityEngine.Rendering.LWRP
             using (new ProfilingSample(cmd, k_RenderCameraTag))
             {
                 var settings = asset;
-                LWRPAdditionalCameraData additionalCameraData = null;
-                if (camera.cameraType == CameraType.Game || camera.cameraType == CameraType.VR)
-                    additionalCameraData = camera.gameObject.GetComponent<LWRPAdditionalCameraData>();
+                if(camera.cameraType == CameraType.Game || camera.cameraType == CameraType.VR)
+                {
+                    additionalCameraData = GetLWRPAdditionalCameraData(camera);
+                }
 
                 InitializeCameraData(settings, camera, additionalCameraData, out var cameraData);
                 SetupPerCameraShaderConstants(cameraData);
@@ -181,6 +193,16 @@ namespace UnityEngine.Rendering.LWRP
 #endif
         }
 
+
+        static Dictionary<Camera, PostProcessLayer> postProcessLayerCache = new Dictionary<Camera, PostProcessLayer>();
+
+        static PostProcessLayer GetPostProcessLayer(Camera camera)
+        {
+            if (!postProcessLayerCache.ContainsKey(camera))
+                postProcessLayerCache.Add(camera, camera.GetComponent<PostProcessLayer>());
+            return postProcessLayerCache[camera];
+        }
+
         static void InitializeCameraData(LightweightRenderPipelineAsset settings, Camera camera, LWRPAdditionalCameraData additionalCameraData, out CameraData cameraData)
         {
             const float kRenderScaleThreshold = 0.05f;
@@ -204,7 +226,7 @@ namespace UnityEngine.Rendering.LWRP
 
             cameraData.isHdrEnabled = camera.allowHDR && settings.supportsHDR;
 
-            cameraData.postProcessLayer = camera.GetComponent<PostProcessLayer>();
+            cameraData.postProcessLayer = GetPostProcessLayer(camera);
             cameraData.postProcessEnabled = cameraData.postProcessLayer != null && cameraData.postProcessLayer.isActiveAndEnabled;
 
             // Disables postprocessing in mobile VR. It's stable on mobile yet.
@@ -298,6 +320,18 @@ namespace UnityEngine.Rendering.LWRP
             renderingData.killAlphaInFinalBlit = !Graphics.preserveFramebufferAlpha && platformNeedsToKillAlpha;
         }
 
+        static Dictionary<Light, LWRPAdditionalLightData> additionalLightDataCache = new Dictionary<Light, LWRPAdditionalLightData>();
+
+        static LWRPAdditionalLightData GetAdditionalLightData(Light light)
+        {
+            if (!additionalLightDataCache.ContainsKey(light))
+            {
+                additionalLightDataCache.Add(light, light.GetComponent<LWRPAdditionalLightData>());
+            }
+            return additionalLightDataCache[light];
+        }
+        static LWRPAdditionalLightData data;
+
         static void InitializeShadowData(LightweightRenderPipelineAsset settings, NativeArray<VisibleLight> visibleLights, bool mainLightCastShadows, bool additionalLightsCastShadows, out ShadowData shadowData)
         {
             m_ShadowBiasData.Clear();
@@ -305,8 +339,8 @@ namespace UnityEngine.Rendering.LWRP
             for (int i = 0; i < visibleLights.Length; ++i)
             {
                 Light light = visibleLights[i].light;
-                LWRPAdditionalLightData data =
-                    (light != null) ? light.gameObject.GetComponent<LWRPAdditionalLightData>() : null;
+
+                data = (light != null) ? GetAdditionalLightData(light) : null;
 
                 if (data && !data.usePipelineSettings)
                     m_ShadowBiasData.Add(new Vector4(light.shadowBias, light.shadowNormalBias, 0.0f, 0.0f));
