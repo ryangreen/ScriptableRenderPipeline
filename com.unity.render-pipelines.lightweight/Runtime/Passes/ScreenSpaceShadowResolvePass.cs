@@ -8,19 +8,21 @@ namespace UnityEngine.Rendering.LWRP
         RenderTargetHandle m_ScreenSpaceShadowmap;
         RenderTextureDescriptor m_RenderTextureDescriptor;
         const string m_ProfilerTag = "Resolve Shadows";
+        private bool supportsR8RenderTextureFormat;
 
         public ScreenSpaceShadowResolvePass(RenderPassEvent evt, Material screenspaceShadowsMaterial)
         {
             m_ScreenSpaceShadowsMaterial = screenspaceShadowsMaterial;
             m_ScreenSpaceShadowmap.Init("_ScreenSpaceShadowmapTexture");
             renderPassEvent = evt;
+            supportsR8RenderTextureFormat = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.R8);
         }
 
         public void Setup(RenderTextureDescriptor baseDescriptor)
         {
             m_RenderTextureDescriptor = baseDescriptor;
             m_RenderTextureDescriptor.depthBufferBits = 0;
-            m_RenderTextureDescriptor.colorFormat = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.R8)
+            m_RenderTextureDescriptor.colorFormat = supportsR8RenderTextureFormat
                 ? RenderTextureFormat.R8
                 : RenderTextureFormat.ARGB32;
         }
